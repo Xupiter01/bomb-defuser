@@ -14,7 +14,7 @@
 - **Genre:** Grid Puzzle × Action Arcade Hybrid
 - **Platform:** Web (desktop + mobile), deployed via GitHub Pages
 - **Art Style:** 2D Pixel Art (16-bit inspired, neon-on-dark palette)
-- **Multiplayer:** Solo + 2P Co-op (shared screen)
+- **Multiplayer:** Solo + 2P Co-op (Online via WebRTC/PeerJS)
 - **Persistence:** localStorage (progress, stats) + Firebase (leaderboard)
 
 ---
@@ -91,7 +91,8 @@ bomb-defuser/
 |----------|--------|------|----------|
 | Desktop | Left click | Right click / F key | Number keys 1-4 or click bar |
 | Mobile | Tap | Swipe left / long-press (500ms) | Bottom sheet buttons |
-| Co-op | P1: left half + blue cells | P2: right half + red cells | Each player has own power-up bar |
+| Co-op | P1: full grid (blue), P2: full grid (red) — both clear cells. Co-op combo bonus. |
+| Online | WebRTC via PeerJS — host creates room, peer joins with room code. Synchronized grid state. |
 
 ### 3.4 Scored System
 
