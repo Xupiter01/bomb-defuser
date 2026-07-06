@@ -30,12 +30,13 @@ export class GameScene extends Phaser.Scene {
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
 
-    // Background (per stage)
+    // Background (per stage). Keep it atmospheric but subdued so the board stays readable.
     const bgKey = STAGE_BG[this.stageNum] || 'bg_office';
-    this.add.image(W/2, H/2, bgKey).setDisplaySize(W, H);
+    this.add.image(W/2, H/2, bgKey).setDisplaySize(W, H).setAlpha(0.42).setTint(0x7f8fb8);
+    this.add.rectangle(W/2, H/2, W, H, 0x050814, 0.58);
 
     // HUD: stage, lives, timer
-    this.add.text(W/2, 30, `STAGE ${this.stageNum}`, { fontFamily: 'monospace', fontSize: '20px', color: '#8ad3ff' }).setOrigin(0.5);
+    this.add.text(W/2, 30, `STAGE ${this.stageNum}`, { fontFamily: 'monospace', fontSize: '20px', color: '#8ad3ff', stroke: '#001018', strokeThickness: 4 }).setOrigin(0.5);
     this.timerText = this.add.text(W/2, 60, this.config.time + 's', { fontFamily: 'monospace', fontSize: '28px', color: '#ffd60a' }).setOrigin(0.5);
     this.scoreText = this.add.text(W/2, 92, '0', { fontFamily: 'monospace', fontSize: '16px', color: '#8ad3ff' }).setOrigin(0.5);
 
@@ -54,6 +55,27 @@ export class GameScene extends Phaser.Scene {
     this.boardX = (W - this.boardW) / 2;
     this.boardY = 160;
 
+    // High-contrast board panel separates gameplay from detailed stage art.
+    this.add.rectangle(
+      W / 2,
+      this.boardY + this.boardH / 2,
+      this.boardW + 28,
+      this.boardH + 28,
+      0x050814,
+      0.92
+    ).setStrokeStyle(4, 0x00f5d4, 0.85);
+    this.add.rectangle(
+      W / 2,
+      this.boardY + this.boardH / 2,
+      this.boardW + 14,
+      this.boardH + 14,
+      0x111a2e,
+      0.96
+    ).setStrokeStyle(2, 0x8ad3ff, 0.35);
+
+    // High-contrast generated tile textures keep the puzzle readable on phones.
+    this.ensureClarityTextures();
+
     // Render grid
     this.cellSprites = [];
     this.numberTexts = [];
@@ -63,13 +85,22 @@ export class GameScene extends Phaser.Scene {
       for (let c = 0; c < this.config.cols; c++) {
         const x = this.boardX + c * this.cellSize + this.cellSize/2;
         const y = this.boardY + r * this.cellSize + this.cellSize/2;
-        const sprite = this.add.image(x, y, 'tile_revealed').setDisplaySize(this.cellSize - 2, this.cellSize - 2).setInteractive({ useHandCursor: true });
+        this.add.rectangle(x, y, this.cellSize - 1, this.cellSize - 1, 0x030711, 1)
+          .setStrokeStyle(2, 0x20385f, 0.9);
+        const sprite = this.add.image(x, y, 'tile_hidden_clear')
+          .setDisplaySize(this.cellSize - 6, this.cellSize - 6)
+          .setInteractive({ useHandCursor: true });
         sprite.setData('r', r);
         sprite.setData('c', c);
         sprite.on('pointerdown', (ptr) => this.handleClick(ptr, r, c));
         this.cellSprites[r][c] = sprite;
         const num = this.add.text(x, y, '', {
-          fontFamily: 'monospace', fontSize: '20px', color: '#fff', fontStyle: 'bold'
+          fontFamily: 'monospace',
+          fontSize: `${Math.min(30, Math.floor(this.cellSize * 0.58))}px`,
+          color: '#fff',
+          fontStyle: 'bold',
+          stroke: '#02050c',
+          strokeThickness: 6,
         }).setOrigin(0.5);
         this.numberTexts[r][c] = num;
       }
@@ -119,6 +150,30 @@ export class GameScene extends Phaser.Scene {
     this.timer.start();
   }
 
+  ensureClarityTextures() {
+    if (this.textures.exists('tile_hidden_clear')) return;
+
+    const makeTile = (key, fill, stroke, inner = null) => {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(fill, 1);
+      g.fillRoundedRect(3, 3, 58, 58, 7);
+      g.lineStyle(4, stroke, 1);
+      g.strokeRoundedRect(3, 3, 58, 58, 7);
+      if (inner) {
+        g.lineStyle(2, inner, 0.9);
+        g.strokeRoundedRect(13, 13, 38, 38, 4);
+      }
+      g.generateTexture(key, 64, 64);
+      g.destroy();
+    };
+
+    makeTile('tile_hidden_clear', 0x0b1830, 0x2f6db3, 0x183b6e);
+    makeTile('tile_empty_clear', 0x263957, 0x8ad3ff, null);
+    makeTile('tile_safe_clear', 0xd9f1ff, 0x00f5d4, null);
+    makeTile('tile_boss_clear', 0x3a2430, 0xffd60a, 0xff4d6d);
+    makeTile('tile_mine_clear', 0x3d1018, 0xff4d6d, 0xff9aa8);
+  }
+
   placeBossTriggers() {
     let placed = 0, attempts = 0;
     while (placed < 3 && attempts < 100) {
@@ -165,7 +220,7 @@ export class GameScene extends Phaser.Scene {
     const cell = this.grid[r][c];
     if (cell.revealed) return;
     cell.flagged = !cell.flagged;
-    this.cellSprites[r][c].setTexture(cell.flagged ? 'tile_flag' : 'tile_revealed');
+    this.cellSprites[r][c].clearTint().setTexture(cell.flagged ? 'tile_flag' : 'tile_hidden_clear');
     this.sound.play('flag_place');
   }
 
@@ -185,7 +240,7 @@ export class GameScene extends Phaser.Scene {
       if (this.lives >= 0) this.livesIcons[this.lives].setTexture('heart_empty');
       this.combo = 0;
       cell.revealed = true;
-      this.cellSprites[r][c].setTexture('tile_mine');
+      this.cellSprites[r][c].clearTint().setTexture('tile_mine_clear').setDisplaySize(this.cellSize - 6, this.cellSize - 6);
       this.numberTexts[r][c].setText('');
       if (this.lives <= 0) this.gameOver(false);
     } else {
@@ -224,22 +279,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   refreshBoard() {
-    const numColors = ['#0000ff', '#008000', '#ff0000', '#000080', '#800000', '#008080', '#000000', '#808080'];
+    const numColors = ['#5ee7ff', '#6cff8d', '#ff5b7a', '#ffd166', '#c77dff', '#00f5d4', '#ffffff', '#ff9f1c'];
     for (let r = 0; r < this.config.rows; r++) {
       for (let c = 0; c < this.config.cols; c++) {
         const cell = this.grid[r][c];
         if (!cell.revealed) continue;
         if (cell.mine) {
-          this.cellSprites[r][c].setTexture('tile_mine');
+          this.cellSprites[r][c].clearTint().setTexture('tile_mine_clear').setDisplaySize(this.cellSize - 6, this.cellSize - 6);
           this.numberTexts[r][c].setText('');
         } else if (cell.bossTrigger) {
-          this.cellSprites[r][c].setTexture('tile_boss');
+          this.cellSprites[r][c].clearTint().setTexture('tile_boss_clear').setDisplaySize(this.cellSize - 6, this.cellSize - 6);
           this.numberTexts[r][c].setText('⚡').setColor('#ffd60a');
         } else if (cell.adjacent > 0) {
-          this.cellSprites[r][c].setTexture('tile_safe');
+          this.cellSprites[r][c].clearTint().setTexture('tile_safe_clear').setDisplaySize(this.cellSize - 6, this.cellSize - 6);
           this.numberTexts[r][c].setText(String(cell.adjacent)).setColor(numColors[cell.adjacent - 1] || '#fff');
         } else {
-          this.cellSprites[r][c].setTexture('tile_revealed');
+          this.cellSprites[r][c].clearTint().setTexture('tile_empty_clear').setDisplaySize(this.cellSize - 6, this.cellSize - 6);
           this.numberTexts[r][c].setText('');
         }
       }
