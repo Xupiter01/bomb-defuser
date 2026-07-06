@@ -65,7 +65,7 @@ export class LobbyScene extends Phaser.Scene {
       const size = Phaser.Math.Between(2, 5);
       this.add.circle(x, y, size, 0x17385e, 0.55);
     }
-    this.add.rectangle(W/2, 465, W - 36, 705, 0x0b1830, 0.72).setStrokeStyle(3, 0x1e7fb5, 0.55);
+    this.add.rectangle(W/2, 440, W - 36, 650, 0x0b1830, 0.72).setStrokeStyle(3, 0x1e7fb5, 0.55);
     this.add.text(W/2, 112, 'CITY MAP', {
       fontFamily: 'monospace', fontSize: '13px', color: '#4fb6ff', letterSpacing: 4,
     }).setOrigin(0.5);
