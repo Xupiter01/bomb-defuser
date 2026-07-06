@@ -48,19 +48,23 @@ export class LobbyScene extends Phaser.Scene {
       this.modeText.setText(`MODE: ${this.mode.toUpperCase()}`);
     });
 
+    const startStage = () => {
+      if (this.mode === 'coop') {
+        this.scene.start('CoopScene');
+      } else {
+        this.scene.start('GameScene', { stage: 1 });
+      }
+    };
+
     // Play button
     const playBtn = this.add.text(W/2, 460, '[ START ]', {
       fontFamily: 'monospace', fontSize: '26px', color: '#00f5d4', fontStyle: 'bold'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     playBtn.on('pointerover', () => playBtn.setColor('#fff'));
     playBtn.on('pointerout', () => playBtn.setColor('#00f5d4'));
-    playBtn.on('pointerdown', () => {
-      if (this.mode === 'coop') {
-        this.scene.start('CoopScene');
-      } else {
-        this.scene.start('GameScene', { stage: 1 });
-      }
-    });
+    playBtn.on('pointerdown', startStage);
+    this.input.keyboard.on('keydown-ENTER', startStage);
+    this.input.keyboard.on('keydown-SPACE', startStage);
 
     // Back button
     const backBtn = this.add.text(W/2, 540, '< BACK', {

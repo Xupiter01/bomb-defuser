@@ -10,10 +10,12 @@ import { LeaderboardScene } from './scenes/LeaderboardScene.js';
 
 const config = {
   type: Phaser.AUTO,
+  parent: 'game',
   width: 540, height: 960,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   backgroundColor: '#0a0a1a',
   scene: [BootScene, TitleScene, LobbyScene, GameScene, BossScene, GameOverScene, CoopScene, LeaderboardScene]
 };
 
-new Phaser.Game(config);
+// Expose for browser smoke tests and debugging.
+window.game = new Phaser.Game(config);

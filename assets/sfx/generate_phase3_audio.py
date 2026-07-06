@@ -10,11 +10,18 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def write_wav(path, samples):
+    """Write a browser-decodable PCM WAV file.
+
+    WAV chunks must be RIFF/WAVE, fmt, data header, then sample bytes.
+    The previous version wrote sample bytes before the data chunk, which
+    made Web Audio fail with "Unable to decode audio data".
+    """
+    pcm = b''.join(struct.pack('<h', max(-32767, min(32767, int(s)))) for s in samples)
     with open(path, 'wb') as f:
-        f.write(b'RIFF' + struct.pack('<I', 36 + len(samples) * 2) + b'WAVE')
+        f.write(b'RIFF' + struct.pack('<I', 36 + len(pcm)) + b'WAVE')
         f.write(b'fmt ' + struct.pack('<IHHIIHH', 16, 1, 1, SR, SR * 2, 2, 16))
-        f.write(b''.join(struct.pack('<h', max(-32767, min(32767, int(s)))) for s in samples))
-        f.write(b'data' + struct.pack('<I', len(samples) * 2))
+        f.write(b'data' + struct.pack('<I', len(pcm)))
+        f.write(pcm)
 
 
 def sine(freq, t):

@@ -3,9 +3,9 @@
 // Wire counts: stage3=6/4seq, stage6=7/6seq, stage9=8/8seq, stage10=8/10seq
 const BOSS_CONFIG = {
   3:  { wires: 6, sequence: 4, bossImg: 'boss_1' },
-  6:  { wires: 6, sequence: 4, bossImg: 'boss_1' },
-  9:  { wires: 6, sequence: 4, bossImg: 'boss_1' },
-  10: { wires: 6, sequence: 4, bossImg: 'boss_1' },
+  6:  { wires: 7, sequence: 6, bossImg: 'boss_2' },
+  9:  { wires: 8, sequence: 8, bossImg: 'boss_3' },
+  10: { wires: 8, sequence: 10, bossImg: 'boss_4' },
 };
 const COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'white', 'black'];
 
@@ -112,10 +112,14 @@ export class BossScene extends Phaser.Scene {
         this.cameras.main.flash(200, 0, 245, 212);
         if (this.bossLives <= 0) {
           this.sound.play('stage_clear');
-          this.infoText.setText('💥 BOSS DEFEATED!');
+          this.infoText.setText(this.stageNum >= 10 ? '💥 FINAL BOMB DEFUSED!' : '💥 BOSS DEFEATED!');
           this.bgm.stop();
           this.time.delayedCall(2000, () => {
-            this.scene.start('GameScene', { stage: this.stageNum + 1 });
+            if (this.stageNum >= 10) {
+              this.scene.start('GameOverScene', { won: true, complete: true, stage: this.stageNum, score: this.score });
+            } else {
+              this.scene.start('GameScene', { stage: this.stageNum + 1, score: this.score });
+            }
           });
         } else {
           this.playerStep = 0;

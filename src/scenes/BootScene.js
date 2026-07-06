@@ -5,6 +5,8 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const cx = this.cameras.main.width / 2;
     const cy = this.cameras.main.height / 2;
+    const assetVersion = '20260706-audiofix';
+    const asset = (path) => `${path}?v=${assetVersion}`;
     this.add.text(cx, cy - 80, '💣 BOMB DEFUSER', { fontFamily: 'monospace', fontSize: '32px', color: '#ff4d6d' }).setOrigin(0.5);
     this.add.text(cx, cy - 40, 'Loading...', { fontFamily: 'monospace', fontSize: '18px', color: '#8ad3ff' }).setOrigin(0.5);
 
@@ -16,35 +18,35 @@ export class BootScene extends Phaser.Scene {
 
     // Tiles
     for (const t of ['safe', 'mine', 'boss', 'powerup', 'flag', 'revealed']) {
-      this.load.image(`tile_${t}`, `assets/img/tile_${t}.png`);
+      this.load.image(`tile_${t}`, asset(`assets/img/tile_${t}.png`));
     }
     // UI
     for (const k of ['heart_full', 'heart_empty', 'btn_play']) {
-      this.load.image(k, `assets/img/${k}.png`);
+      this.load.image(k, asset(`assets/img/${k}.png`));
     }
     for (let i = 1; i <= 4; i++) {
-      this.load.image(`btn_powerup_${i}`, `assets/img/btn_powerup_${i}.png`);
+      this.load.image(`btn_powerup_${i}`, asset(`assets/img/btn_powerup_${i}.png`));
     }
     // Boss + Wires
     for (let i = 1; i <= 4; i++) {
-      this.load.image(`boss_${i}`, `assets/img/boss_${i}.png`);
+      this.load.image(`boss_${i}`, asset(`assets/img/boss_${i}.png`));
     }
     for (const c of ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'white', 'black']) {
-      this.load.image(`wire_${c}`, `assets/img/wire_${c}.png`);
+      this.load.image(`wire_${c}`, asset(`assets/img/wire_${c}.png`));
     }
     // Backgrounds (in subfolder)
     for (const b of ['bg_office', 'bg_vault', 'bg_factory', 'bg_subway', 'bg_construction', 'bg_alien', 'bg_nuclear']) {
-      this.load.image(b, `assets/img/bg/${b}.png`);
+      this.load.image(b, asset(`assets/img/bg/${b}.png`));
     }
     // Player (4 frames per anim)
     for (const anim of ['idle', 'walk', 'cut', 'defuse']) {
       for (let i = 1; i <= 4; i++) {
-        this.load.image(`player_${anim}_${i}`, `assets/img/player_${anim}_${i}.png`);
+        this.load.image(`player_${anim}_${i}`, asset(`assets/img/player_${anim}_${i}.png`));
       }
     }
     // Particles
     for (const p of ['particle_explosion', 'particle_spark', 'particle_smoke', 'particle_confetti']) {
-      this.load.image(p, `assets/img/${p}.png`);
+      this.load.image(p, asset(`assets/img/${p}.png`));
     }
     // SFX
     const sfxList = [
@@ -55,15 +57,15 @@ export class BootScene extends Phaser.Scene {
       'wire_cut', 'qte_hit', 'qte_miss',
     ];
     for (const s of sfxList) {
-      this.load.audio(s, `assets/sfx/${s}.wav`);
+      this.load.audio(s, asset(`assets/sfx/${s}.wav`));
     }
     // BGM (per location, not per stage)
     for (const loc of ['office', 'vault', 'factory', 'subway', 'construction', 'alien', 'nuclear']) {
-      this.load.audio(`bgm_${loc}`, `assets/sfx/bgm_${loc}.wav`);
+      this.load.audio(`bgm_${loc}`, asset(`assets/sfx/bgm_${loc}.wav`));
     }
     // Boss BGM
     for (const n of [3, 6, 9, 10]) {
-      this.load.audio(`bgm_boss_stage${n}`, `assets/sfx/bgm_boss_stage${n}.wav`);
+      this.load.audio(`bgm_boss_stage${n}`, asset(`assets/sfx/bgm_boss_stage${n}.wav`));
     }
   }
 

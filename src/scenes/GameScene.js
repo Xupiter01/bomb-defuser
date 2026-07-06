@@ -105,8 +105,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     // BGM
-    if (this.sound.get(`bgm_${STAGE_BG[this.stageNum] || 'office'}`)) {
-      this.bgm = this.sound.add(`bgm_${STAGE_BG[this.stageNum] || 'office'}`, { loop: true, volume: 0.3 });
+    const bgmKey = bgKey.replace('bg_', 'bgm_');
+    if (this.sound.get(bgmKey)) {
+      this.bgm = this.sound.add(bgmKey, { loop: true, volume: 0.3 });
       this.bgm.play();
     }
 
@@ -131,6 +132,16 @@ export class GameScene extends Phaser.Scene {
       attempts++;
     }
     this.bossTriggersRevealed = 0;
+  }
+
+  countRevealedBossTriggers() {
+    let count = 0;
+    for (let r = 0; r < this.config.rows; r++) {
+      for (let c = 0; c < this.config.cols; c++) {
+        if (this.grid[r][c].bossTrigger && this.grid[r][c].revealed) count++;
+      }
+    }
+    return count;
   }
 
   handleClick(ptr, r, c) {
@@ -185,24 +196,29 @@ export class GameScene extends Phaser.Scene {
       this.sound.play('cell_reveal');
       if (mult > 1) this.sound.play(`combo_${mult === 1.5 ? 1 : mult === 2 ? 2 : 3}`);
       this.refreshBoard();
+      this.bossTriggersRevealed = this.countRevealedBossTriggers();
       this.score = Math.floor(this.score + 10 * this.config.stage * mult);
       this.scoreText.setText(this.score.toString());
 
-      if (cell.bossTrigger) {
-        this.bossTriggersRevealed++;
-        this.sound.play('powerup_shield');
-        if (this.bossTriggersRevealed >= 3) {
+      if (this.config.isBoss && this.bossTriggersRevealed >= 3) {
+        this.timer.stop();
+        if (this.bgm) this.bgm.stop();
+        this.time.delayedCall(500, () => {
+          this.scene.start('BossScene', { stage: this.stageNum, score: this.score });
+        });
+        return;
+      }
+
+      if (countUnrevealedSafe(this.grid) === 0) {
+        if (this.config.isBoss) {
           this.timer.stop();
           if (this.bgm) this.bgm.stop();
           this.time.delayedCall(500, () => {
             this.scene.start('BossScene', { stage: this.stageNum, score: this.score });
           });
-          return;
+        } else {
+          this.stageCleared();
         }
-      }
-
-      if (countUnrevealedSafe(this.grid) === 0) {
-        this.stageCleared();
       }
     }
   }
@@ -236,7 +252,13 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.powerupCharges[type]--;
-    this.sound.play('powerup_scan');
+    const powerupSound = {
+      shield: 'powerup_shield',
+      scanner: 'powerup_scan',
+      freeze: 'powerup_freeze',
+      cross: 'powerup_crosshair',
+    }[type] || 'powerup_scan';
+    this.sound.play(powerupSound);
     switch (type) {
       case 'shield':
         this.playerShield = true;
@@ -262,8 +284,12 @@ export class GameScene extends Phaser.Scene {
         // Reveal one row + one col (but not mines)
         const idx = Phaser.Math.Between(0, this.config.rows - 1);
         const jdx = Phaser.Math.Between(0, this.config.cols - 1);
-        for (let c = 0; c < this.config.cols; c++) this.reveal(idx, c);
-        for (let r = 0; r < this.config.rows; r++) this.reveal(r, jdx);
+        for (let c = 0; c < this.config.cols; c++) {
+          if (!this.grid[idx][c].mine) this.reveal(idx, c);
+        }
+        for (let r = 0; r < this.config.rows; r++) {
+          if (!this.grid[r][jdx].mine) this.reveal(r, jdx);
+        }
         this.powerupText.setText(`✝️ Cross: row ${idx+1} + col ${jdx+1} revealed`);
         break;
       }

@@ -3,6 +3,7 @@ export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
 
   init(data) {
+    this.complete = data.complete || false;
     this.won = data.won || false;
     this.stageNum = data.stage || 1;
     this.score = data.score || 0;
@@ -16,13 +17,13 @@ export class GameOverScene extends Phaser.Scene {
     const H = this.cameras.main.height;
 
     this.cameras.main.setBackgroundColor(this.won ? '#0a0a1a' : '#1a0a0a');
-    this.add.text(W/2, 80, this.won ? '💥 STAGE CLEAR' : '💀 GAME OVER', {
+    this.add.text(W/2, 80, this.complete ? '🏆 BOMB DEFUSER COMPLETE' : (this.won ? '💥 STAGE CLEAR' : '💀 GAME OVER'), {
       fontFamily: 'monospace', fontSize: '36px',
       color: this.won ? '#00f5d4' : '#ff4d6d', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     if (this.won) {
-      this.add.text(W/2, 160, `Stage ${this.stageNum} cleared!`, {
+      this.add.text(W/2, 160, this.complete ? 'All bombs defused. City saved!' : `Stage ${this.stageNum} cleared!`, {
         fontFamily: 'monospace', fontSize: '20px', color: '#fff'
       }).setOrigin(0.5);
 
@@ -39,14 +40,16 @@ export class GameOverScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '20px', color: '#00f5d4', fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      const nextBtn = this.add.text(W/2, 400, '[ NEXT STAGE ]', {
-        fontFamily: 'monospace', fontSize: '22px', color: '#00f5d4'
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      nextBtn.on('pointerover', () => nextBtn.setColor('#fff'));
-      nextBtn.on('pointerout', () => nextBtn.setColor('#00f5d4'));
-      nextBtn.on('pointerdown', () => {
-        this.scene.start('GameScene', { stage: this.stageNum + 1 });
-      });
+      if (!this.complete && this.stageNum < 10) {
+        const nextBtn = this.add.text(W/2, 400, '[ NEXT STAGE ]', {
+          fontFamily: 'monospace', fontSize: '22px', color: '#00f5d4'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        nextBtn.on('pointerover', () => nextBtn.setColor('#fff'));
+        nextBtn.on('pointerout', () => nextBtn.setColor('#00f5d4'));
+        nextBtn.on('pointerdown', () => {
+          this.scene.start('GameScene', { stage: this.stageNum + 1, score: this.score });
+        });
+      }
     } else {
       this.add.text(W/2, 160, `Failed at Stage ${this.stageNum}`, {
         fontFamily: 'monospace', fontSize: '20px', color: '#fff'

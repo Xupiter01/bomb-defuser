@@ -10,13 +10,24 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(cx, cy - 100, 'BOMB DEFUSER', { fontFamily: 'monospace', fontSize: '32px', color: '#ff4d6d', fontStyle: 'bold' }).setOrigin(0.5);
     this.add.text(cx, cy - 60, 'A pixel art grid puzzle', { fontFamily: 'monospace', fontSize: '14px', color: '#8ad3ff' }).setOrigin(0.5);
 
+    const startGame = () => this.scene.start('LobbyScene');
+
     // Play button
     const playBtn = this.add.image(cx, cy + 20, 'btn_play').setInteractive({ useHandCursor: true });
     playBtn.setScale(2);
     playBtn.on('pointerover', () => playBtn.setScale(2.1));
     playBtn.on('pointerout', () => playBtn.setScale(2));
-    playBtn.on('pointerdown', () => {
-      this.scene.start('LobbyScene');
+    playBtn.on('pointerdown', startGame);
+
+    // Keyboard fallback for desktop/smoke tests.
+    this.input.keyboard.on('keydown-ENTER', startGame);
+    this.input.keyboard.on('keydown-SPACE', startGame);
+
+    // Touch fallback: tapping around the play button also starts the lobby.
+    this.input.on('pointerdown', (pointer) => {
+      if (Phaser.Math.Distance.Between(pointer.x, pointer.y, cx, cy + 20) <= 80) {
+        startGame();
+      }
     });
 
     // Leaderboard button
