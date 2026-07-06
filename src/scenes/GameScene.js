@@ -33,6 +33,9 @@ export class GameScene extends Phaser.Scene {
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
 
+    // Prevent browser right-click menu on the canvas
+    this.input.mouse.disableContextMenu();
+
     // Background (per stage). Keep it atmospheric but subdued so the board stays readable.
     const bgKey = STAGE_BG[this.stageNum] || 'bg_office';
     this.add.image(W/2, H/2, bgKey).setDisplaySize(W, H).setAlpha(0.42).setTint(0x7f8fb8);
@@ -95,7 +98,41 @@ export class GameScene extends Phaser.Scene {
           .setInteractive({ useHandCursor: true });
         sprite.setData('r', r);
         sprite.setData('c', c);
-        sprite.on('pointerdown', (ptr) => this.handleClick(ptr, r, c));
+
+        // Long-press aware input: short tap = reveal, long-press (400ms) = flag, right-click = flag
+        sprite.on('pointerdown', (ptr) => {
+          if (ptr.rightButtonDown()) {
+            // Right-click: flag/unflag immediately
+            if (this.coop && !this.isMyTurn) return;
+            this.toggleFlag(r, c);
+            return;
+          }
+          if (this.coop && !this.isMyTurn) return;
+          // Start long-press detection for mobile flagging
+          this._tapCell = { r, c };
+          this._tapMoved = false;
+          if (this._longPressTimer) this._longPressTimer.remove();
+          this._longPressTimer = this.time.delayedCall(420, () => {
+            if (!this._tapCell || this._tapMoved) return;
+            // Long-press: flag/unflag the cell
+            this.toggleFlag(r, c);
+            this._tapCell.longPressed = true;
+          });
+        });
+        sprite.on('pointerup', () => {
+          if (!this._tapCell || this._tapMoved) return;
+          if (this._longPressTimer) { this._longPressTimer.remove(); this._longPressTimer = null; }
+          if (this._tapCell.longPressed) { this._tapCell = null; return; }
+          // Short tap (touch or left-click): reveal cell
+          this.reveal(r, c);
+          if (this.coop && this.conn) {
+            this.conn.send({ type: 'reveal', r, c });
+            this.isMyTurn = false;
+            if (this.turnText) this.turnText.setText('WAITING...').setColor('#ffd60a');
+          }
+          this._tapCell = null;
+        });
+        sprite.on('pointermove', () => { this._tapMoved = true; });
         this.cellSprites[r][c] = sprite;
         const num = this.add.text(x, y, '', {
           fontFamily: 'monospace',
