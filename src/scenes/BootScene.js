@@ -70,6 +70,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('TitleScene');
+    // Delay one tick so remote/CDN builds reliably transition after the loader completes.
+    this.time.delayedCall(0, () => this.scene.start('TitleScene'));
   }
 }

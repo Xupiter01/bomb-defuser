@@ -19,3 +19,13 @@ const config = {
 
 // Expose for browser smoke tests and debugging.
 window.game = new Phaser.Game(config);
+
+// Safety fallback for static hosts/CDN cache edge cases: if Boot completes but no scene
+// is active, bring up the title screen rather than leaving a black canvas.
+window.setTimeout(() => {
+  const scenes = window.game?.scene?.scenes || [];
+  const hasActiveScene = scenes.some((scene) => scene.scene.isActive());
+  if (!hasActiveScene && window.game?.scene?.getScene('TitleScene')) {
+    window.game.scene.start('TitleScene');
+  }
+}, 1500);
