@@ -36,5 +36,7 @@ export class Countdown {
     }
   }
 
+  pause(sec) { this.freeze(sec); }
+
   stop() { if (this.event) { this.event.remove(); this.event = null; } }
 }
