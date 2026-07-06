@@ -57,7 +57,6 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   drawMapBackground(W, H) {
-    // layered night-map panels
     this.add.rectangle(W/2, H/2, W, H, 0x07101f, 1);
     for (let i = 0; i < 18; i++) {
       const x = Phaser.Math.Between(20, W - 20);
@@ -119,13 +118,13 @@ export class LobbyScene extends Phaser.Scene {
         stroke: '#02050c', strokeThickness: 4,
       }).setOrigin(0.5);
 
+      // — Tap-to-play interaction on unlocked nodes (tap anywhere on/around the node) —
       if (unlocked) {
-        node.setInteractive({ useHandCursor: true });
-        node.on('pointerdown', () => this.selectStage(stage.stage));
-        label.setInteractive({ useHandCursor: true });
-        label.on('pointerdown', () => this.selectStage(stage.stage));
+        const hitZone = this.add.rectangle(x, y, 68, 68, 0x000000, 0).setInteractive({ useHandCursor: true });
+        hitZone.on('pointerdown', () => this.startStage(stage.stage));
       }
 
+      // "NEXT" pulse + label for the current unlockable stage
       if (isCurrent) {
         this.tweens.add({ targets: [node, halo], scale: 1.12, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         this.add.text(x, y - 40, 'NEXT', {
@@ -135,17 +134,15 @@ export class LobbyScene extends Phaser.Scene {
     });
   }
 
-  selectStage(stage) {
-    this.selectedStage = stage;
-    this.playBtn.setText(`[ PLAY STAGE ${stage} ]`);
-    this.cameras.main.flash(90, 0, 245, 212);
-  }
-
-  startSelected() {
+  startStage(stage) {
     if (this.mode === 'coop') {
       this.scene.start('CoopScene');
     } else {
-      this.scene.start('GameScene', { stage: this.selectedStage });
+      this.scene.start('GameScene', { stage });
     }
+  }
+
+  startSelected() {
+    this.startStage(this.selectedStage);
   }
 }
