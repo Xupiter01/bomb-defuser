@@ -99,40 +99,35 @@ export class GameScene extends Phaser.Scene {
         sprite.setData('r', r);
         sprite.setData('c', c);
 
-        // Long-press aware input: short tap = reveal, long-press (400ms) = flag, right-click = flag
+        // === INPUT: right-click = flag, left-click/tap = reveal, long-press (touch) = flag ===
+        // Pointer events for desktop (right-click detection)
         sprite.on('pointerdown', (ptr) => {
+          // Right-click on desktop: flag immediately
           if (ptr.rightButtonDown()) {
-            // Right-click: flag/unflag immediately
             if (this.coop && !this.isMyTurn) return;
             this.toggleFlag(r, c);
             return;
           }
-          if (this.coop && !this.isMyTurn) return;
-          // Start long-press detection for mobile flagging
+          // Left-click / touch start — defer reveal to pointerup so long-press can cancel it
           this._tapCell = { r, c };
           this._tapMoved = false;
-          if (this._longPressTimer) this._longPressTimer.remove();
-          this._longPressTimer = this.time.delayedCall(420, () => {
-            if (!this._tapCell || this._tapMoved) return;
-            // Long-press: flag/unflag the cell
-            this.toggleFlag(r, c);
-            this._tapCell.longPressed = true;
-          });
         });
         sprite.on('pointerup', () => {
-          if (!this._tapCell || this._tapMoved) return;
-          if (this._longPressTimer) { this._longPressTimer.remove(); this._longPressTimer = null; }
+          if (this._tapMoved) { this._tapCell = null; return; }
+          if (!this._tapCell) return;
+          // If long-press already flagged this cell, skip reveal
           if (this._tapCell.longPressed) { this._tapCell = null; return; }
-          // Short tap (touch or left-click): reveal cell
+          if (this._longPressTimer) { this._longPressTimer.remove(); this._longPressTimer = null; }
+          // Short tap: reveal
           this.reveal(r, c);
-          if (this.coop && this.conn) {
-            this.conn.send({ type: 'reveal', r, c });
-            this.isMyTurn = false;
-            if (this.turnText) this.turnText.setText('WAITING...').setColor('#ffd60a');
-          }
           this._tapCell = null;
         });
         sprite.on('pointermove', () => { this._tapMoved = true; });
+        // pointercancel: clean up if OS/gestures steal the touch
+        sprite.on('pointercancel', () => {
+          if (this._longPressTimer) { this._longPressTimer.remove(); this._longPressTimer = null; }
+          this._tapCell = null;
+        });
         this.cellSprites[r][c] = sprite;
         const num = this.add.text(x, y, '', {
           fontFamily: 'monospace',
@@ -145,6 +140,11 @@ export class GameScene extends Phaser.Scene {
         this.numberTexts[r][c] = num;
       }
     }
+
+    // === Native touch handler for reliable long-press on mobile ===
+    // iOS/Android may not reliably fire pointer events after long-hold,
+    // so we add a direct DOM-level long-press detector on the canvas.
+    this._initTouchLongPress();
 
     // Boss trigger cells (3 cells with ⚡ marker) for boss stages
     if (this.config.isBoss) {
@@ -455,6 +455,92 @@ export class GameScene extends Phaser.Scene {
         lives: this.lives,
       });
     });
+  }
+
+  // --- Native DOM long-press detector for mobile flagging ---
+  // iOS/Android may steal pointer events during long-hold (context menu).
+  // This listens directly on the canvas element using touch events.
+  _initTouchLongPress() {
+    const canvas = this.sys.game.canvas;
+    if (!canvas || this._touchInited) return;
+    this._touchInited = true;
+
+    let touchTimer = null;
+    let touchTarget = null; // {r, c}
+    let touchMoved = false;
+
+    const touchStart = (e) => {
+      // Only interested in single-finger touches
+      if (e.touches.length !== 1) return;
+      // e.preventDefault() — blocks iOS context menu / selection on long-hold
+      // (CSS touch-action already does this, but this is an extra safety net)
+      // Don't preventDefault here — it might block scroll; we do it in the timer callback.
+      
+      const touch = e.touches[0];
+      // Find which cell was touched by checking pointer position
+      const cam = this.cameras.main;
+      const px = touch.clientX;
+      const py = touch.clientY;
+      
+      // Scan cells to find which one contains this point
+      touchTarget = null;
+      for (let r = 0; r < this.config.rows; r++) {
+        for (let c = 0; c < this.config.cols; c++) {
+          const sprite = this.cellSprites[r]?.[c];
+          if (!sprite) continue;
+          const bounds = sprite.getBounds();
+          if (px >= bounds.left && px <= bounds.right && py >= bounds.top && py <= bounds.bottom) {
+            touchTarget = { r, c };
+            break;
+          }
+        }
+        if (touchTarget) break;
+      }
+      if (!touchTarget) return;
+
+      touchMoved = false;
+
+      // Start long-press timer
+      if (touchTimer) clearTimeout(touchTimer);
+      touchTimer = setTimeout(() => {
+        if (!touchTarget || touchMoved) return;
+        // Prevent default to stop iOS context menu / selection
+        // (we only do preventDefault when we're sure it's a long-press)
+        this.toggleFlag(touchTarget.r, touchTarget.c);
+        touchTimer = null;
+        // Mark so that pointerup doesn't also reveal
+        this._tapCell = { r: touchTarget.r, c: touchTarget.c, longPressed: true };
+      }, 400);
+    };
+
+    const touchMove = () => { touchMoved = true; };
+
+    const touchEnd = (e) => {
+      if (touchTimer) { clearTimeout(touchTimer); touchTimer = null; }
+      // If long-press wasn't triggered (timer cleared = short tap),
+      // let Phaser's pointerup handle the reveal normally.
+      // If long-press was triggered, _tapCell.longPressed is set and pointerup skips reveal.
+      touchTarget = null;
+    };
+
+    // Also handle touchcancel (OS gesture interruption)
+    const touchCancel = () => {
+      if (touchTimer) { clearTimeout(touchTimer); touchTimer = null; }
+      touchTarget = null;
+    };
+
+    canvas.addEventListener('touchstart', touchStart, { passive: true });
+    canvas.addEventListener('touchmove', touchMove, { passive: true });
+    canvas.addEventListener('touchend', touchEnd, { passive: true });
+    canvas.addEventListener('touchcancel', touchCancel, { passive: true });
+
+    // Store refs for cleanup
+    this._touchCleanup = () => {
+      canvas.removeEventListener('touchstart', touchStart);
+      canvas.removeEventListener('touchmove', touchMove);
+      canvas.removeEventListener('touchend', touchEnd);
+      canvas.removeEventListener('touchcancel', touchCancel);
+    };
   }
 
   shutdown() {
