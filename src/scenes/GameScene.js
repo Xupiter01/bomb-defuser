@@ -105,8 +105,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     // BGM
-    if (this.sound.get(`bgm_stage${this.stageNum}`)) {
-      this.bgm = this.sound.add(`bgm_stage${this.stageNum}`, { loop: true, volume: 0.3 });
+    if (this.sound.get(`bgm_${STAGE_BG[this.stageNum] || 'office'}`)) {
+      this.bgm = this.sound.add(`bgm_${STAGE_BG[this.stageNum] || 'office'}`, { loop: true, volume: 0.3 });
       this.bgm.play();
     }
 
@@ -165,7 +165,7 @@ export class GameScene extends Phaser.Scene {
       if (this.playerShield) {
         this.playerShield = false;
         this.powerupText.setText('🛡️ Shield absorbed the hit!');
-        this.sound.play('shield_use');
+        this.sound.play('powerup_shield');
         return;
       }
       this.lives--;
@@ -190,7 +190,7 @@ export class GameScene extends Phaser.Scene {
 
       if (cell.bossTrigger) {
         this.bossTriggersRevealed++;
-        this.sound.play('boss_trigger');
+        this.sound.play('powerup_shield');
         if (this.bossTriggersRevealed >= 3) {
           this.timer.stop();
           if (this.bgm) this.bgm.stop();
@@ -236,7 +236,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.powerupCharges[type]--;
-    this.sound.play('powerup_use');
+    this.sound.play('powerup_scan');
     switch (type) {
       case 'shield':
         this.playerShield = true;

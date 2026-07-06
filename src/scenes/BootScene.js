@@ -32,14 +32,17 @@ export class BootScene extends Phaser.Scene {
     for (const c of ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'white', 'black']) {
       this.load.image(`wire_${c}`, `assets/img/wire_${c}.png`);
     }
-    // Backgrounds (Phase 3)
+    // Backgrounds (in subfolder)
     for (const b of ['bg_office', 'bg_vault', 'bg_factory', 'bg_subway', 'bg_construction', 'bg_alien', 'bg_nuclear']) {
-      this.load.image(b, `assets/img/${b}.png`);
+      this.load.image(b, `assets/img/bg/${b}.png`);
     }
-    // Player + Particles
-    for (const p of ['player_idle', 'player_walk', 'player_cut', 'player_defuse']) {
-      this.load.image(p, `assets/img/${p}.png`);
+    // Player (4 frames per anim)
+    for (const anim of ['idle', 'walk', 'cut', 'defuse']) {
+      for (let i = 1; i <= 4; i++) {
+        this.load.image(`player_${anim}_${i}`, `assets/img/player_${anim}_${i}.png`);
+      }
     }
+    // Particles
     for (const p of ['particle_explosion', 'particle_spark', 'particle_smoke', 'particle_confetti']) {
       this.load.image(p, `assets/img/${p}.png`);
     }
@@ -48,16 +51,19 @@ export class BootScene extends Phaser.Scene {
       'cell_reveal', 'mine_explode', 'flag_place',
       'combo_1', 'combo_2', 'combo_3',
       'timer_warning', 'stage_clear', 'stage_fail',
-      'powerup_use', 'shield_use', 'boss_trigger',
+      'powerup_shield', 'powerup_scan', 'powerup_freeze', 'powerup_crosshair',
       'wire_cut', 'qte_hit', 'qte_miss',
-      'boss_bgm_stage3', 'boss_bgm_stage6', 'boss_bgm_stage9', 'boss_bgm_stage10',
     ];
     for (const s of sfxList) {
       this.load.audio(s, `assets/sfx/${s}.wav`);
     }
-    // BGM per stage
-    for (let i = 1; i <= 10; i++) {
-      this.load.audio(`bgm_stage${i}`, `assets/sfx/bgm_stage${i}.wav`);
+    // BGM (per location, not per stage)
+    for (const loc of ['office', 'vault', 'factory', 'subway', 'construction', 'alien', 'nuclear']) {
+      this.load.audio(`bgm_${loc}`, `assets/sfx/bgm_${loc}.wav`);
+    }
+    // Boss BGM
+    for (const n of [3, 6, 9, 10]) {
+      this.load.audio(`bgm_boss_stage${n}`, `assets/sfx/bgm_boss_stage${n}.wav`);
     }
   }
 
