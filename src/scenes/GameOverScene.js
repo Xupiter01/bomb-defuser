@@ -1,4 +1,6 @@
 // GameOverScene: shown after stage fail or game completion
+import { recordStageClear } from '../logic/Progress.js';
+
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
 
@@ -10,6 +12,7 @@ export class GameOverScene extends Phaser.Scene {
     this.lives = data.lives || 0;
     this.timeBonus = data.timeBonus || 0;
     this.lifeBonus = data.lifeBonus || 0;
+    this.stars = Math.max(1, Math.min(3, data.stars || 1));
   }
 
   create() {
@@ -17,6 +20,7 @@ export class GameOverScene extends Phaser.Scene {
     const H = this.cameras.main.height;
 
     this.cameras.main.setBackgroundColor(this.won ? '#0a0a1a' : '#1a0a0a');
+    if (this.won) recordStageClear(this.stageNum, this.stars);
     this.add.text(W/2, 80, this.complete ? '🏆 BOMB DEFUSER COMPLETE' : (this.won ? '💥 STAGE CLEAR' : '💀 GAME OVER'), {
       fontFamily: 'monospace', fontSize: '36px',
       color: this.won ? '#00f5d4' : '#ff4d6d', fontStyle: 'bold'
@@ -27,16 +31,20 @@ export class GameOverScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '20px', color: '#fff'
       }).setOrigin(0.5);
 
-      this.add.text(W/2, 220, 'Score Breakdown', {
+      this.add.text(W/2, 195, '★'.repeat(this.stars) + '☆'.repeat(3 - this.stars), {
+        fontFamily: 'monospace', fontSize: '30px', color: '#ffd60a', fontStyle: 'bold', stroke: '#3d2500', strokeThickness: 5
+      }).setOrigin(0.5);
+
+      this.add.text(W/2, 235, 'Score Breakdown', {
         fontFamily: 'monospace', fontSize: '16px', color: '#8ad3ff'
       }).setOrigin(0.5);
-      this.add.text(W/2, 250, `Time bonus: +${this.timeBonus}`, {
+      this.add.text(W/2, 265, `Time bonus: +${this.timeBonus}`, {
         fontFamily: 'monospace', fontSize: '14px', color: '#ffd60a'
       }).setOrigin(0.5);
-      this.add.text(W/2, 275, `Lives bonus: +${this.lifeBonus}`, {
+      this.add.text(W/2, 290, `Lives bonus: +${this.lifeBonus}`, {
         fontFamily: 'monospace', fontSize: '14px', color: '#ffd60a'
       }).setOrigin(0.5);
-      this.add.text(W/2, 310, `Total: ${this.score}`, {
+      this.add.text(W/2, 325, `Total: ${this.score}`, {
         fontFamily: 'monospace', fontSize: '20px', color: '#00f5d4', fontStyle: 'bold'
       }).setOrigin(0.5);
 

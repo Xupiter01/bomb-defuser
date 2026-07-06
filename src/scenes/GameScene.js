@@ -1,6 +1,7 @@
 import { generateBoard, floodReveal, countUnrevealedSafe } from '../logic/Board.js';
 import { getStage } from '../logic/StageData.js';
 import { Countdown } from '../logic/Timer.js';
+import { isStageUnlocked, calculateStars } from '../logic/Progress.js';
 import { submitScore } from './LeaderboardScene.js';
 
 const STAGE_BG = {
@@ -15,9 +16,11 @@ export class GameScene extends Phaser.Scene {
 
   init(data) {
     this.stageNum = data.stage || 1;
+    if (!isStageUnlocked(this.stageNum) && !data.ignoreLock) this.stageNum = 1;
     this.config = getStage(this.stageNum);
     this.lives = this.config.lives;
     this.score = data.score || 0;
+    this.mineHits = data.mineHits || 0;
     this.combo = 0;
     this.comboMax = 0;
     this.playerShield = false;
@@ -235,6 +238,7 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       this.lives--;
+      this.mineHits++;
       this.cameras.main.flash(200, 255, 0, 0);
       this.cameras.main.shake(200, 0.01);
       if (this.lives >= 0) this.livesIcons[this.lives].setTexture('heart_empty');
@@ -259,7 +263,15 @@ export class GameScene extends Phaser.Scene {
         this.timer.stop();
         if (this.bgm) this.bgm.stop();
         this.time.delayedCall(500, () => {
-          this.scene.start('BossScene', { stage: this.stageNum, score: this.score });
+          this.scene.start('BossScene', {
+            stage: this.stageNum,
+            score: this.score,
+            timeRemaining: this.timer.remaining,
+            totalTime: this.config.time,
+            lives: this.lives,
+            maxLives: this.config.lives,
+            mineHits: this.mineHits,
+          });
         });
         return;
       }
@@ -269,7 +281,15 @@ export class GameScene extends Phaser.Scene {
           this.timer.stop();
           if (this.bgm) this.bgm.stop();
           this.time.delayedCall(500, () => {
-            this.scene.start('BossScene', { stage: this.stageNum, score: this.score });
+            this.scene.start('BossScene', {
+            stage: this.stageNum,
+            score: this.score,
+            timeRemaining: this.timer.remaining,
+            totalTime: this.config.time,
+            lives: this.lives,
+            maxLives: this.config.lives,
+            mineHits: this.mineHits,
+          });
           });
         } else {
           this.stageCleared();
@@ -364,6 +384,13 @@ export class GameScene extends Phaser.Scene {
     this.sound.play('stage_clear');
     const timeBonus = this.timer.remaining * 5;
     const lifeBonus = this.lives * 50;
+    const stars = calculateStars({
+      timeRemaining: this.timer.remaining,
+      totalTime: this.config.time,
+      lives: this.lives,
+      maxLives: this.config.lives,
+      mineHits: this.mineHits,
+    });
     this.score += timeBonus + lifeBonus;
     if (this.bgm) this.bgm.stop();
     this.time.delayedCall(1500, () => {
@@ -373,6 +400,7 @@ export class GameScene extends Phaser.Scene {
         score: this.score,
         timeBonus,
         lifeBonus,
+        stars,
       });
     });
   }

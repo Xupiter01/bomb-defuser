@@ -1,4 +1,6 @@
 // BossScene: Simon-Says wire-cutting QTE
+import { calculateStars } from '../logic/Progress.js';
+
 // Stages 3/6/9/10 trigger this after grid clear
 // Wire counts: stage3=6/4seq, stage6=7/6seq, stage9=8/8seq, stage10=8/10seq
 const BOSS_CONFIG = {
@@ -16,6 +18,11 @@ export class BossScene extends Phaser.Scene {
     this.stageNum = data.stage || 3;
     this.score = data.score || 0;
     this.config = BOSS_CONFIG[this.stageNum] || BOSS_CONFIG[3];
+    this.timeRemaining = data.timeRemaining || 0;
+    this.totalTime = data.totalTime || 1;
+    this.lives = data.lives || 0;
+    this.maxLives = data.maxLives || 3;
+    this.mineHits = data.mineHits || 0;
   }
 
   create() {
@@ -114,12 +121,23 @@ export class BossScene extends Phaser.Scene {
           this.sound.play('stage_clear');
           this.infoText.setText(this.stageNum >= 10 ? '💥 FINAL BOMB DEFUSED!' : '💥 BOSS DEFEATED!');
           this.bgm.stop();
+          const stars = calculateStars({
+            timeRemaining: this.timeRemaining,
+            totalTime: this.totalTime,
+            lives: this.lives,
+            maxLives: this.maxLives,
+            mineHits: this.mineHits,
+            bossAttempts: this.attempts,
+            bossSequence: this.config.sequence,
+          });
           this.time.delayedCall(2000, () => {
-            if (this.stageNum >= 10) {
-              this.scene.start('GameOverScene', { won: true, complete: true, stage: this.stageNum, score: this.score });
-            } else {
-              this.scene.start('GameScene', { stage: this.stageNum + 1, score: this.score });
-            }
+            this.scene.start('GameOverScene', {
+              won: true,
+              complete: this.stageNum >= 10,
+              stage: this.stageNum,
+              score: this.score,
+              stars,
+            });
           });
         } else {
           this.playerStep = 0;
