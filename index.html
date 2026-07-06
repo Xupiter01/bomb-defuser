@@ -1,16 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>💣 Bomb Defuser</title>
+  <meta charset="utf-8">
+  <title>💣 BOMB DEFUSER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a1a; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    html, body { margin: 0; padding: 0; background: #0a0a1a; overflow: hidden; touch-action: none; }
+    body { font-family: monospace; }
+    #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+  <div id="game"></div>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
